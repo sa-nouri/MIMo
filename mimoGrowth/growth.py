@@ -102,15 +102,18 @@ def get_version(path: str) -> str:
         str: The version of MIMo. Is either 'v1' or 'v2'.
     """
 
-    # Get the path names for the model and meta file from the
-    # include attributes.
+    # Get the path names for the model and meta file from the include attributes.
     root_scene = ET.parse(path).getroot()
     includes = root_scene.findall(".//include")
-    paths = [include.attrib["file"] for include in includes]
+    all_paths = [include.attrib["file"] for include in includes]
+    paths = [p for p in all_paths if "MIMo_model" in p or "MIMo_meta" in p]
+
+    if not paths:
+        raise ValueError(f"No MIMo model/meta include found in {path}.")
 
     is_v2 = ["v2" in path for path in paths]
 
-    # Check that both paths contain the same version.
+    # Check that all MIMo model/meta paths agree on version.
     if len(set(is_v2)) == 2:
         raise ValueError(f"Inconsistent MIMo version in {path}.")
 

@@ -49,8 +49,9 @@ def test(env, save_dir, test_for=1000, model=None, render_video=False):
     im_counter = 0
 
     for idx in range(test_for):
-        if model is None:
+        if model is None and idx == 0:
             print("No model, taking random actions")
+        if model is None:
             action = env.action_space.sample()
         else:
             action, _ = model.predict(obs)
@@ -58,6 +59,8 @@ def test(env, save_dir, test_for=1000, model=None, render_video=False):
         if render_video:
             img = env.mujoco_renderer.render(render_mode="rgb_array")
             images.append(img)
+        else:
+            env.render()
         if done or trunc:
             time.sleep(1)
             obs, _ = env.reset()
@@ -143,7 +146,8 @@ def main():
                  "catch": "MIMoCatch-v0",
                  "roll_over": "MIMoRollOver-v0"}
 
-    env = gym.make(env_names[env_name], actuation_model=actuation_model)
+    render_mode = "human" if (test_for > 0 and not render) else None
+    env = gym.make(env_names[env_name], actuation_model=actuation_model, render_mode=render_mode)
     env.reset()
 
     if algorithm == 'PPO':

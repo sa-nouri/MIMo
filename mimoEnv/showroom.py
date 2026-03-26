@@ -17,7 +17,7 @@ def main():
     max_steps = 200
 
     _ = env.reset()
-
+    
     start = time.time()
     for step in range(max_steps):
         action = np.zeros(env.action_space.shape)
@@ -26,7 +26,7 @@ def main():
         if done or trunc:
             env.reset()
 
-    print("Elapsed time: ", time.time() - start, "Simulation time:", max_steps*env.dt)
+    print("Elapsed time: ", time.time() - start, "Simulation time:", max_steps * env.unwrapped.dt)
     env.close()
 
 

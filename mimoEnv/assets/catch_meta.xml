@@ -101,6 +101,7 @@
 			<joint joint="robot:head_tilt" coef="-1"/>
 		</fixed>
 		<!-- TODO: Change to springlength="0 0.1" after migrating to newer MuJoCo versions-->
+		<!-- Abduction (side-joint) coupling between adjacent fingers -->
 		<fixed class="mimo" name="fingers_ad_ffmf_right" limited="false" springlength="0" stiffness=".03">
 			<joint joint="robot:right_ff_side" coef="1"/>
 			<joint joint="robot:right_mf_side" coef="-1"/>
@@ -112,6 +113,20 @@
 		<fixed class="mimo" name="fingers_ad_rflf_right" limited="false" springlength="0" stiffness=".03">
 			<joint joint="robot:right_rf_side" coef="1"/>
 			<joint joint="robot:right_lf_side" coef="-1"/>
+		</fixed>
+
+		<!-- Knuckle (MCP flexion) coupling between adjacent fingers. -->
+		<fixed class="mimo" name="coupling_right_ff_mf" stiffness="0.005" damping="0.001">
+			<joint joint="robot:right_ff_knuckle" coef="1"/>
+			<joint joint="robot:right_mf_knuckle" coef="-1"/>
+		</fixed>
+		<fixed class="mimo" name="coupling_right_mf_rf" stiffness="0.005" damping="0.001">
+			<joint joint="robot:right_mf_knuckle" coef="1"/>
+			<joint joint="robot:right_rf_knuckle" coef="-1"/>
+		</fixed>
+		<fixed class="mimo" name="coupling_right_rf_lf" stiffness="0.008" damping="0.001">
+			<joint joint="robot:right_rf_knuckle" coef="1"/>
+			<joint joint="robot:right_lf_knuckle" coef="-1"/>
 		</fixed>
 	</tendon>
 	

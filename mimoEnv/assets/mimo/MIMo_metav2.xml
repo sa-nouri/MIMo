@@ -124,6 +124,36 @@ This file includes work (https://github.com/vikashplus/Adroit) covered by the fo
 			<joint joint="robot:head_swivel" coef="1"/>
 			<joint joint="robot:head_tilt" coef="-1"/>
 		</fixed>
+
+		<!-- Knuckle (MCP flexion) coupling between adjacent fingers. -->
+
+		<!-- Right hand -->
+		<fixed class="mimo" name="coupling_right_ff_mf" stiffness="0.005" damping="0.001">
+			<joint joint="robot:right_ff_knuckle" coef="1"/>
+			<joint joint="robot:right_mf_knuckle" coef="-1"/>
+		</fixed>
+		<fixed class="mimo" name="coupling_right_mf_rf" stiffness="0.005" damping="0.001">
+			<joint joint="robot:right_mf_knuckle" coef="1"/>
+			<joint joint="robot:right_rf_knuckle" coef="-1"/>
+		</fixed>
+		<fixed class="mimo" name="coupling_right_rf_lf" stiffness="0.008" damping="0.001">
+			<joint joint="robot:right_rf_knuckle" coef="1"/>
+			<joint joint="robot:right_lf_knuckle" coef="-1"/>
+		</fixed>
+
+		<!-- Left hand -->
+		<fixed class="mimo" name="coupling_left_ff_mf" stiffness="0.005" damping="0.001">
+			<joint joint="robot:left_ff_knuckle" coef="1"/>
+			<joint joint="robot:left_mf_knuckle" coef="-1"/>
+		</fixed>
+		<fixed class="mimo" name="coupling_left_mf_rf" stiffness="0.005" damping="0.001">
+			<joint joint="robot:left_mf_knuckle" coef="1"/>
+			<joint joint="robot:left_rf_knuckle" coef="-1"/>
+		</fixed>
+		<fixed class="mimo" name="coupling_left_rf_lf" stiffness="0.008" damping="0.001">
+			<joint joint="robot:left_rf_knuckle" coef="1"/>
+			<joint joint="robot:left_lf_knuckle" coef="-1"/>
+		</fixed>
 	</tendon>
 	
 	<sensor>

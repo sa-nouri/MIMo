@@ -129,6 +129,9 @@ class SimpleVision(Vision):
         imgs = {}
         for camera in self.camera_parameters:
             self.env.camera_name = camera
+            import mujoco as _mj
+            cam_id = _mj.mj_name2id(self.env.model, _mj.mjtObj.mjOBJ_CAMERA, camera)
+            self.env.mujoco_renderer.camera_id = cam_id if cam_id != -1 else None
             rgb_viewer.viewport = self._viewports[camera]
             img = self.env.render()
             if self._acuity_functions[camera] is not None: # Apply age-dependent visual acuity
@@ -141,6 +144,7 @@ class SimpleVision(Vision):
         self.env.render_mode = old_mode
         self.env.camera_name = old_cam_name
         self.env.camera_id = old_cam_id
+        self.env.mujoco_renderer.camera_id = old_cam_id
         rgb_viewer.viewport = old_viewport
 
         return imgs

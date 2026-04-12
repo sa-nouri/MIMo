@@ -1,0 +1,92 @@
+<mujoco model="MIMo">
+
+    <compiler inertiafromgeom="true" angle="degree"/>
+
+    <option timestep="0.005" iterations="50" tolerance="1e-10" solver="Newton"
+            jacobian="dense" cone="elliptic" impratio="1.0"/>
+
+    <size nconmax="1000" njmax="5000" nstack="10000000" nuser_cam="3"/>
+
+    <visual>
+        <map force="0.1" zfar="30" znear="0.005"/>
+        <rgba haze="0.15 0.25 0.35 1"/>
+        <quality shadowsize="4096"/>
+        <global offwidth="800" offheight="800"/>
+    </visual>
+
+    <default>
+        <geom material="matgeom" condim="3" solimp="0.95 0.99 0.001 0.5 1" solref="0.005 1"/>
+    </default>
+
+    <asset>
+        <texture type="skybox" builtin="gradient" rgb1="0.3 0.5 0.7" rgb2="0 0 0"
+                 width="512" height="512"/>
+
+        <texture name="texplane" type="2d" builtin="checker" rgb1=".2 .3 .4"
+                 rgb2=".1 0.15 0.2" width="512" height="512" mark="cross"
+                 markrgb=".8 .8 .8"/>
+
+        <texture name="texgeom" type="cube" builtin="flat" mark="cross" width="127"
+                 height="1278" rgb1="0.8 0.6 0.4" rgb2="0.8 0.6 0.4" markrgb="1 1 1"
+                 random="0.01"/>
+
+        <!-- Floor: zero reflectance so the tilted mirror plane is the sole
+             reflective surface. -->
+        <material name="matplane" reflectance="0" texture="texplane" texrepeat="1 1"
+                  texuniform="true"/>
+
+        <material name="matgeom" texture="texgeom" texuniform="true" rgba="0.8 0.6 .4 1"/>
+
+        <!-- Mirror surface material -->
+        <material name="mirror_mat" rgba="0.02 0.02 0.02 1"
+                  reflectance="0.95" specular="1.0" shininess="1.0"/>
+    </asset>
+
+    <!-- Import MIMo definition (v2 with five-fingered hands) -->
+    <include file="mirror_metav2.xml"/>
+
+    <worldbody>
+        <!-- Reflective floor — this IS the mirror surface.
+             MuJoCo renders reflections only on horizontal planes reliably. -->
+        <geom name="floor" pos="0 0 0" size="0 0 .25" type="plane" material="matplane"
+              condim="3"/>
+
+        <!-- Ambient overhead light -->
+        <light directional="false" diffuse=".4 .4 .4" specular="0 0 0" pos="0 0 10"
+               dir="0 0 -1" castshadow="false"/>
+
+        <!-- Tracking light on MIMo -->
+        <light mode="targetbodycom" target="upper_body" directional="false"
+               diffuse=".8 .8 .8" specular="0.3 0.3 0.3" pos="0 0 5.0" dir="0 0 -1"/>
+
+        <!-- Front light for better body illumination -->
+        <light directional="false" diffuse=".5 .5 .5" specular="0.2 0.2 0.2"
+               pos="1.0 0 1.5" dir="-1 0 -0.3" castshadow="false"/>
+
+        <!-- Tilted mirror plane.
+             MuJoCo only renders reflections on plane geoms.
+             euler="0 -75 0" tilts normal 75° from +z toward -x,
+             making the plane 15° from vertical. This angle allows
+             the forward-looking eye cameras to see a reflection of
+             MIMo's body in the tilted plane.
+             Positioned lower (z=0.3) and closer (x=0.8) so the
+             reflection covers more of the visual field. -->
+        <body name="mirror_panel" pos="0.8 0 0.3">
+            <!-- Reflective tilted plane -->
+            <geom name="mirror_surface" type="plane" size="0.62 0.66 0.01"
+                  euler="0 -75 0"
+                  material="mirror_mat" contype="0" conaffinity="0"/>
+        </body>
+
+        <!-- Third-person cameras for debugging -->
+        <camera name="side_view" pos="0 -2.0 1.5" xyaxes="1 0 0 0 0.5 1" mode="fixed"/>
+        <camera name="top_view" pos="0 0 2.5" euler="0 0 0" mode="fixed"/>
+
+        <!-- MIMo body -->
+        <body name="mimo_location" pos="0 0 .35" euler="0 0 0">
+            <freejoint/>
+            <include file="mimo/MIMo_modelv2.xml"/>
+        </body>
+
+    </worldbody>
+</mujoco>

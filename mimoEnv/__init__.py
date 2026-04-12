@@ -76,3 +76,8 @@ register(id='MIMoRollOver-v0',
          entry_point='mimoEnv.envs:MIMoRollOverEnv',
          max_episode_steps=500,
          )
+
+register(id='MIMoMirror-v0',
+         entry_point='mimoEnv.envs:MIMoMirrorEnv',
+         max_episode_steps=2000,
+         )

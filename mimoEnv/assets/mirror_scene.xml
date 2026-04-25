@@ -39,7 +39,7 @@
 
         <!-- Mirror surface material -->
         <material name="mirror_mat" rgba="0.02 0.02 0.02 1"
-                  reflectance="0.95" specular="1.0" shininess="1.0"/>
+                  reflectance="0.95" specular="0" shininess="0"/>
     </asset>
 
     <!-- Import MIMo definition (v2 with five-fingered hands) -->
@@ -69,11 +69,18 @@
              making the plane 15° from vertical. This angle allows
              the forward-looking eye cameras to see a reflection of
              MIMo's body in the tilted plane.
-             Positioned lower (z=0.3) and closer (x=0.8) so the
-             reflection covers more of the visual field. -->
-        <body name="mirror_panel" pos="0.8 0 0.3">
+
+             Size: half-extents 0.735 × 0.175 -> full mirror is
+             1.47 m tall × 0.35 m wide (the long edge runs along
+             the mirror's local x, which after the rotation maps
+             to mostly +z in world frame, i.e., vertical).
+
+             Position: center placed at z=0.96 so that the bottom
+             edge of the mirror sits ~25 cm above the floor
+             (center_z = 0.25 + 0.735 · sin(75°)). -->
+        <body name="mirror_panel" pos="0.8 0 0.96">
             <!-- Reflective tilted plane -->
-            <geom name="mirror_surface" type="plane" size="0.62 0.66 0.01"
+            <geom name="mirror_surface" type="plane" size="0.735 0.175 0.01"
                   euler="0 -75 0"
                   material="mirror_mat" contype="0" conaffinity="0"/>
         </body>

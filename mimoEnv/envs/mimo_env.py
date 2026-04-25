@@ -378,8 +378,11 @@ class MIMoEnv(MujocoEnv, utils.EzPickle):
         self._set_observation_space()
 
     def _initialize_simulation(self,):
-        model, data = super()._initialize_simulation()
-        self.model, self.data = model, data
+        # gymnasium >=0.28's MujocoEnv._initialize_simulation() returns None
+        # and writes self.model / self.data internally; read them back rather
+        # than unpacking the (now-None) return value.
+        super()._initialize_simulation()
+        model, data = self.model, self.data
 
         fps = int(np.round(1 / self.dt))
         self.metadata = {

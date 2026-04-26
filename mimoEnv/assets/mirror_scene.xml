@@ -63,26 +63,11 @@
         <light directional="false" diffuse=".5 .5 .5" specular="0.2 0.2 0.2"
                pos="1.0 0 1.5" dir="-1 0 -0.3" castshadow="false"/>
 
-        <!-- Tilted mirror plane.
-             MuJoCo only renders reflections on plane geoms.
-             euler="0 -75 0" tilts normal 75° from +z toward -x,
-             making the plane 15° from vertical. This angle allows
-             the forward-looking eye cameras to see a reflection of
-             MIMo's body in the tilted plane.
-
-             Size: half-extents 0.735 × 0.175 -> full mirror is
-             1.47 m tall × 0.35 m wide (the long edge runs along
-             the mirror's local x, which after the rotation maps
-             to mostly +z in world frame, i.e., vertical).
-
-             Position: center placed at z=0.96 so that the bottom
-             edge of the mirror sits ~25 cm above the floor
-             (center_z = 0.25 + 0.735 · sin(75°)). -->
-        <body name="mirror_panel" pos="0.8 0 0.96">
-            <!-- Reflective tilted plane -->
+        <!-- Tilted mirror plane. -->
+        <body name="mirror_panel" pos="0.40 0 0.96">
+            <!-- Reflective tilted plane (collidable) -->
             <geom name="mirror_surface" type="plane" size="0.735 0.175 0.01"
-                  euler="0 -75 0"
-                  material="mirror_mat" contype="0" conaffinity="0"/>
+                  euler="0 -75 0" material="mirror_mat"/>
         </body>
 
         <!-- Third-person cameras for debugging -->

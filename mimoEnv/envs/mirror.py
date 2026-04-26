@@ -20,6 +20,7 @@ import numpy as np
 from mimoEnv.envs.mimo_env import (
     MIMoEnv,
     DEFAULT_PROPRIOCEPTION_PARAMS,
+    DEFAULT_TOUCH_PARAMS_V2,
     DEFAULT_VISION_PARAMS,
     SCENE_DIRECTORY,
 )
@@ -60,7 +61,7 @@ class MIMoMirrorEnv(MIMoEnv):
         initial_qpos=None,
         frame_skip=2,
         proprio_params=DEFAULT_PROPRIOCEPTION_PARAMS,
-        touch_params=None,
+        touch_params=DEFAULT_TOUCH_PARAMS_V2,
         vision_params=DEFAULT_VISION_PARAMS,
         vestibular_params=None,
         actuation_model=SpringDamperModel,
@@ -68,6 +69,8 @@ class MIMoMirrorEnv(MIMoEnv):
         done_active=False,
         **kwargs,
     ):
+        # Touch is enabled by default (DEFAULT_TOUCH_PARAMS_V2 — V2 because
+        # the mirror scene uses MIMo's five-fingered v2 hands).
         super().__init__(
             model_path=model_path,
             initial_qpos=initial_qpos,

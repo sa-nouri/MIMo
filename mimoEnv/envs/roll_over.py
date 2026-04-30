@@ -29,7 +29,12 @@ import numpy as np
 import os
 
 STARTING_POSITION = "prone"
-""" Initial position of MIMo. Can be 'prone' or 'supine'.
+""" Default initial position of MIMo for the legacy module-level constant
+behaviour. Can be 'prone' or 'supine'. The class also accepts
+``starting_position="random"`` as a constructor kwarg, which causes the
+pose to be re-sampled (50/50) at every reset; this is the right setting
+for representation-learning experiments that want both poses in the
+training data.
 
 :meta hide-value:
 """
@@ -69,12 +74,17 @@ class MIMoRollOverEnv(MIMoEnv):
                  vision_params=None,
                  vestibular_params=DEFAULT_VESTIBULAR_PARAMS,
                  actuation_model=SpringDamperModel,
+                 starting_position=None,
                  **kwargs):
 
-        if STARTING_POSITION not in ["prone", "supine"]:
-            msg = f"Unknown starting position '{STARTING_POSITION}'. "
-            msg += "Needs to be 'prone' or 'supine'."
+        # Resolve starting_position: explicit kwarg overrides the legacy
+        # module-level constant so existing callers stay working.
+        sp = STARTING_POSITION if starting_position is None else starting_position
+        if sp not in ["prone", "supine", "random"]:
+            msg = (f"Unknown starting position '{sp}'. "
+                   "Needs to be 'prone', 'supine', or 'random'.")
             raise ValueError(msg)
+        self._starting_position_mode = sp
 
         super().__init__(model_path=model_path,
                          initial_qpos=initial_qpos,
@@ -91,14 +101,30 @@ class MIMoRollOverEnv(MIMoEnv):
 
         self.model.body("hip").pos = [0, 0, 0.2]
 
-        self.model.body("hip").quat = [0, -0.7071068, 0, 0.7071068]
-        if STARTING_POSITION == "supine":
-            self.model.body("hip").quat *= np.array([1, -1, 1, 1])
+        # Precompute the settled qpos for BOTH prone and supine starting poses
+        # so reset_model can switch between them cheaply when in "random" mode.
+        base_quat = np.array([0, -0.7071068, 0, 0.7071068])
+        self._init_position_prone = self._stabilise_to_pose(base_quat)
+        self._init_position_supine = self._stabilise_to_pose(
+            base_quat * np.array([1, -1, 1, 1]))
 
+        # Pick the active init_position used by the *first* reset.
+        if sp == "supine":
+            self.init_position = self._init_position_supine
+            self._current_starting_position = "supine"
+        else:
+            # 'prone' or 'random': prone is also the first-episode default for
+            # 'random' mode (subsequent episodes get re-sampled in reset_model).
+            self.init_position = self._init_position_prone
+            self._current_starting_position = "prone"
+
+    def _stabilise_to_pose(self, hip_quat):
+        """Set the hip body quaternion, simulate 100 steps, return settled qpos."""
+        self.set_state(self.init_qpos, self.init_qvel)
+        self.model.body("hip").quat = hip_quat
         for _ in range(100):
             mujoco.mj_step(self.model, self.data)
-
-        self.init_position = self.data.qpos.copy()
+        return self.data.qpos.copy()
 
     def is_success(self, achieved_goal, desired_goal):
         """ Did we reach our goal rotation.
@@ -143,11 +169,21 @@ class MIMoRollOverEnv(MIMoEnv):
         number of steps. This leads to MIMo settling into a slightly random
         prone or supine position.
 
+        When ``starting_position == "random"`` the prone / supine choice is
+        re-sampled 50/50 at every reset.
+
         Returns:
             Dict: Observations after reset.
         """
 
         self.set_state(self.init_qpos, self.init_qvel)
+        if self._starting_position_mode == "random":
+            if self.np_random.uniform() < 0.5:
+                self._current_starting_position = "prone"
+                self.init_position = self._init_position_prone
+            else:
+                self._current_starting_position = "supine"
+                self.init_position = self._init_position_supine
         qpos = self.init_position.copy()
 
         # Set initial positions stochastically.

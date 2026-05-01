@@ -136,13 +136,21 @@ class MIMoRollOverEnv(MIMoEnv):
 
         When ``reset_state=True`` the simulation is first set back to
         ``(init_qpos, init_qvel)`` to clear residual dynamics from a prior
-        settle. Use ``reset_state=False`` for the FIRST settle in
-        ``__init__`` so contact resolution matches the pre-5dc3553 behaviour
-        — see the explanatory comment in ``__init__`` above.
+        settle (used for the supine settle, which runs after prone).
+        Otherwise the function settles from the current sim state — used
+        for the FIRST settle in ``__init__`` so contact resolution matches
+        the pre-5dc3553 behaviour. See the explanatory comment in
+        ``__init__`` above for why.
+
+        The quat assignment happens BEFORE ``set_state`` so that
+        ``set_state``'s internal ``mj_forward`` runs with the new
+        kinematic frame already in place. Otherwise the forward
+        kinematics would run once with the stale (old) quat, perturbing
+        contact resolution and leading to an over-deep settle.
         """
+        self.model.body("hip").quat = hip_quat
         if reset_state:
             self.set_state(self.init_qpos, self.init_qvel)
-        self.model.body("hip").quat = hip_quat
         for _ in range(100):
             mujoco.mj_step(self.model, self.data)
         return self.data.qpos.copy()

@@ -103,10 +103,23 @@ class MIMoRollOverEnv(MIMoEnv):
 
         # Precompute the settled qpos for BOTH prone and supine starting poses
         # so reset_model can switch between them cheaply when in "random" mode.
+        #
+        # The first settle MUST run without an intermediate set_state /
+        # mj_forward call after `hip.pos` is set: pre-5dc3553 the env relied on
+        # mj_forward only being invoked by the first mj_step, with both
+        # hip.pos and hip.quat already at their target values. Calling
+        # set_state(init_qpos, init_qvel) between hip.pos and hip.quat
+        # injects an extra mj_forward with a stale (XML-default) hip quat,
+        # which subtly changes contact resolution and lets the 100-step
+        # settle drop into a deeper rest. That regression was the cause of
+        # the universal envelope shrinkage observed in run_29126412 vs
+        # run_29046658.
         base_quat = np.array([0, -0.7071068, 0, 0.7071068])
-        self._init_position_prone = self._stabilise_to_pose(base_quat)
+        self._init_position_prone = self._stabilise_to_pose(
+            base_quat, reset_state=False)
+        # The supine settle MUST reset to clear the prone-settle dynamics:
         self._init_position_supine = self._stabilise_to_pose(
-            base_quat * np.array([1, -1, 1, 1]))
+            base_quat * np.array([1, -1, 1, 1]), reset_state=True)
 
         # Pick the active init_position used by the *first* reset.
         if sp == "supine":
@@ -118,9 +131,17 @@ class MIMoRollOverEnv(MIMoEnv):
             self.init_position = self._init_position_prone
             self._current_starting_position = "prone"
 
-    def _stabilise_to_pose(self, hip_quat):
-        """Set the hip body quaternion, simulate 100 steps, return settled qpos."""
-        self.set_state(self.init_qpos, self.init_qvel)
+    def _stabilise_to_pose(self, hip_quat, reset_state=False):
+        """Set the hip body quaternion, simulate 100 steps, return settled qpos.
+
+        When ``reset_state=True`` the simulation is first set back to
+        ``(init_qpos, init_qvel)`` to clear residual dynamics from a prior
+        settle. Use ``reset_state=False`` for the FIRST settle in
+        ``__init__`` so contact resolution matches the pre-5dc3553 behaviour
+        — see the explanatory comment in ``__init__`` above.
+        """
+        if reset_state:
+            self.set_state(self.init_qpos, self.init_qvel)
         self.model.body("hip").quat = hip_quat
         for _ in range(100):
             mujoco.mj_step(self.model, self.data)

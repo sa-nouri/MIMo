@@ -81,3 +81,8 @@ register(id='MIMoMirror-v0',
          entry_point='mimoEnv.envs:MIMoMirrorEnv',
          max_episode_steps=2000,
          )
+
+register(id='MIMoFist-v0',
+         entry_point='mimoEnv.envs:MIMoFistEnv',
+         max_episode_steps=2000,
+         )

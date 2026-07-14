@@ -75,6 +75,7 @@ class MIMoRollOverEnv(MIMoEnv):
                  vestibular_params=DEFAULT_VESTIBULAR_PARAMS,
                  actuation_model=SpringDamperModel,
                  starting_position=None,
+                 done_active=False,
                  **kwargs):
 
         # Resolve starting_position: explicit kwarg overrides the legacy
@@ -96,7 +97,7 @@ class MIMoRollOverEnv(MIMoEnv):
                          vestibular_params=vestibular_params,
                          actuation_model=actuation_model,
                          goals_in_observation=False,
-                         done_active=False,
+                         done_active=done_active,
                          **kwargs)
 
         self.model.body("hip").pos = [0, 0, 0.2]
@@ -263,8 +264,7 @@ class MIMoRollOverEnv(MIMoEnv):
         # Normalize the angle to [0, 1].
         angle_norm = (angle - (-90)) / (90 - (-90))
 
-        # Invert the angle depending on the starting position.
-        if STARTING_POSITION == "prone":
+        if self._current_starting_position == "prone":
             angle_norm = 1 - angle_norm
 
         return angle_norm

@@ -105,22 +105,21 @@ class MIMoRollOverEnv(MIMoEnv):
         # Precompute the settled qpos for BOTH prone and supine starting poses
         # so reset_model can switch between them cheaply when in "random" mode.
         #
-        # The first settle MUST run without an intermediate set_state /
-        # mj_forward call after `hip.pos` is set: pre-5dc3553 the env relied on
-        # mj_forward only being invoked by the first mj_step, with both
-        # hip.pos and hip.quat already at their target values. Calling
-        # set_state(init_qpos, init_qvel) between hip.pos and hip.quat
-        # injects an extra mj_forward with a stale (XML-default) hip quat,
-        # which subtly changes contact resolution and lets the 100-step
-        # settle drop into a deeper rest. That regression was the cause of
-        # the universal envelope shrinkage observed in run_29126412 vs
-        # run_29046658.
+        # BOTH settles must reset to a clean (init_qpos, init_qvel) state first.
+        # The prone settle previously ran with reset_state=False (settling from
+        # the contaminated post-super().__init__ state); that diverged and
+        # produced a garbage prone pose with the hip free-joint at z ~= 3.46 m,
+        # so every prone (and ~50% of "random") episode started with MIMo
+        # falling from ~2 m and reaching high achieved_goal purely from the
+        # fall. Resetting first makes prone symmetric with the (correct) supine
+        # settle and yields a stable lying pose (hip z ~= 0.05 m).
         base_quat = np.array([0, -0.7071068, 0, 0.7071068])
+        self._hip_quat_prone = base_quat.copy()
+        self._hip_quat_supine = base_quat * np.array([1, -1, 1, 1])
         self._init_position_prone = self._stabilise_to_pose(
-            base_quat, reset_state=False)
-        # The supine settle MUST reset to clear the prone-settle dynamics:
+            self._hip_quat_prone, reset_state=True)
         self._init_position_supine = self._stabilise_to_pose(
-            base_quat * np.array([1, -1, 1, 1]), reset_state=True)
+            self._hip_quat_supine, reset_state=True)
 
         # Pick the active init_position used by the *first* reset.
         if sp == "supine":
@@ -214,6 +213,14 @@ class MIMoRollOverEnv(MIMoEnv):
             else:
                 self._current_starting_position = "supine"
                 self.init_position = self._init_position_supine
+        # The stored init_position qpos was settled under a specific hip body
+        # frame; the model's hip.quat is left at whichever settle ran last in
+        # __init__ (supine), so it must be re-set to match the chosen pose or
+        # the loaded prone qpos is interpreted in the wrong frame.
+        if self._current_starting_position == "prone":
+            self.model.body("hip").quat = self._hip_quat_prone
+        else:
+            self.model.body("hip").quat = self._hip_quat_supine
         qpos = self.init_position.copy()
 
         # Set initial positions stochastically.
